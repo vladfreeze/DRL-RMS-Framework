@@ -1,0 +1,52 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer-h
+  namespace: sim-env
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer-h
+  template:
+    metadata:
+      labels:
+        app: consumer-h
+      annotations:
+        initial-resources: "{}"
+    spec:
+      nodeSelector:
+        is-edge-worker: "true"
+      containers:
+      - name: consumer-h
+        image: $(IMAGE_REPOSITORY_ENDPOINT)/consumer:v1
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: "800m"
+            memory: "256Mi"
+          limits:
+            cpu: "1"
+            memory: "1512Mi"
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        ports:
+        - containerPort: 8000
+          name: metrics
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: consumer-h
+  namespace: sim-env
+spec:
+  selector:
+    app: consumer-h
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

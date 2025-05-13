@@ -1,0 +1,33 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: watcher
+  namespace: resource-management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: watcher
+  template:
+    metadata:
+      labels:
+        app: watcher
+    spec:
+      serviceAccountName: kube-watcher-sa
+      nodeSelector:
+        is-management-node: "true"
+      containers:
+      - name: watcher
+        image: $(IMAGE_REPOSITORY_ENDPOINT)/watcher:final-1
+        command: ["python", "-u", "watcher.py"]
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: "1"
+            memory: "256Mi"
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+
+      

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-service
+  namespace: resource-management
+spec:
+  selector:
+    app: agent
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: LoadBalancer
+  loadBalancerIP: ${LOAD_BALANCER_IP}

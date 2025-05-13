@@ -1,0 +1,53 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer-a
+  namespace: sim-env
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer-a
+  template:
+    metadata:
+      labels:
+        app: consumer-a
+      annotations:
+        initial-resources: "{}"
+    spec:
+      nodeSelector:
+        is-edge-worker: "true"
+        kubernetes.io/hostname: "v-dev-research-edge-worker-t27p2-bb6bk"
+      containers:
+      - name: consumer-a
+        image: $(IMAGE_REPOSITORY_ENDPOINT)/consumer:v1
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: "800m"
+            memory: "256Mi"
+          limits:
+            cpu: "1"
+            memory: "1512Mi"
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        ports:
+        - containerPort: 8000
+          name: metrics
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: consumer-a
+  namespace: sim-env
+spec:
+  selector:
+    app: consumer-a
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

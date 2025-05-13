@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="input.css" rel="stylesheet"> 
+</head>
+<body class="text-white">
+    <nav class="bg-cyan-600 p-4">
+        <ul class="flex space-x-4">
+            <li><a href="index.html" class="text-white hover:underline">Controller</a></li>
+            <li><a href="monitoring.html" class="text-white hover:underline">Monitoring</a></li>
+            <li><a href="llm-assistant.html" class="text-white hover:underline">LLM-Assistant</a></li>
+        </ul>
+    </nav>
+    <div id="content" class="p-6">
+        <section id="agent-order" class="mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-1">
+                    <div class="flex justify-between items-center">
+                        <h1 class="text-2xl font-bold mb-4">Create Agent</h1>
+                        <button id="toggleFormButton" class="bg-blue-600 text-white p-2 rounded">Toggle Form</button>
+                    </div>
+                    <form id="limitsForm" class="bg-gray-800 p-4 rounded shadow-md hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="scope" class="block mb-2">Scope:</label>
+                                <select id="scope" name="scope" required class="border rounded p-2 mb-4 w-full bg-gray-700 text-white">
+                                    <option value="deployment">Deployment</option>
+                                    <option value="namespace">Namespace</option>
+                                    <option value="node">Node</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="namespace" class="block mb-2">Namespace:</label>
+                                <input type="text" id="namespace" name="namespace" required class="border rounded p-2 mb-4 w-full bg-gray-700 text-white">
+                            </div>
+                            <div>
+                                <label for="node_name" class="block mb-2">Node Name:</label>
+                                <input type="text" id="node_name" name="node_name" class="border rounded p-2 mb-4 w-full bg-gray-700 text-white">
+                            </div>
+                            <div>
+                                <label for="deployment_name" class="block mb-2">Deployment Name:</label>
+                                <input type="text" id="deployment_name" name="deployment_name" class="border rounded p-2 mb-4 w-full bg-gray-700 text-white">
+                            </div>
+                            <div>
+                                <label for="cpu_resource_quota" class="block mb-2">CPU Resource Quota:</label>
+                                <input type="text" id="cpu_resource_quota" name="cpu_resource_quota" class="border rounded p-2 mb-4 w-full bg-gray-700 text-white">
+                            </div>
+                            <div>
+                                <label for="memory_resource_quota" class="block mb-2">Memory Resource Quota:</label>
+                                <input type="text" id="memory_resource_quota" name="memory_resource_quota" class="border rounded p-2 mb-4 w-full bg-gray-700 text-white">
+                            </div>
+                        </div>
+                        <button type="submit" class="bg-green-600 text-white p-2 rounded mt-4">Set Limits</button>
+                    </form>
+           
+                </div>
+                <div class="md:col-span-2">
+                    <h1 class="text-2xl font-bold mb-4">Agents</h1>
+                    
+                    <pre id="kubectlOutput" class="mt-4 bg-gray-800 p-2 rounded"></pre>
+                    <button id="deleteAllButton" class="bg-red-600 text-white p-2 rounded mt-4">Delete All Agents</button>
+                    <button id="llmFormButton" class="bg-cyan-600 text-white p-2 rounded mt-4">Go to LLM Form</button>
+                </div>
+            </div>
+            
+        </section>
+        <section id="monitoring" class="mb-8">
+            <h1 class="text-2xl font-bold mb-4">Deployment Overview</h1>
+            <div id="deploymentsOutput" class="bg-gray-800 p-4 rounded">Loading deployments...</div>
+        </section>
+        <section id="monitoring-pods" class="mb-8">
+            <h1 class="text-2xl font-bold mb-4">Pod Overview</h1>
+            <div id="podsOutput" class="bg-gray-800 p-4 rounded">Loading pods...</div>
+        </section>
+    </div>
+    <script>
+        document.getElementById('toggleFormButton').addEventListener('click', () => {
+            const form = document.getElementById('limitsForm');
+            form.classList.toggle('hidden');
+        });
+
+        document.getElementById('limitsForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const namespace = document.getElementById('namespace').value;
+            const scope = document.getElementById('scope').value;
+            const nodeName = document.getElementById('node_name').value;
+            const deploymentName = document.getElementById('deployment_name').value;
+            const cpuResourceQuota = document.getElementById('cpu_resource_quota').value || "1";
+            const memoryResourceQuota = document.getElementById('memory_resource_quota').value || "1";
+
+            console.log('Submitting form with data:', {
+                namespace, 
+                scope, 
+                node_name: nodeName,
+                deployment_name: deploymentName,
+                resources: {
+                    resourceQuota: {
+                        cpu: cpuResourceQuota,
+                        memory: memoryResourceQuota
+                    }
+                }
+            });
+
+            try {
+                const response = await fetch('/set-limits', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        namespace, 
+                        scope, 
+                        node_name: nodeName,
+                        deployment_name: deploymentName,
+                        resources: {
+                            resourceQuota: {
+                                cpu: cpuResourceQuota,
+                                memory: memoryResourceQuota
+                            }
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                alert(result.message);
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                alert('Failed to set limits. Please try again.');
+            }
+        });
+
+        document.getElementById('scope').addEventListener('change', (event) => {
+            const deploymentNameInput = document.getElementById('deployment_name');
+            if (event.target.value === 'deployment') {
+                deploymentNameInput.required = true;
+            } else {
+                deploymentNameInput.required = false;
+            }
+        });
+    
+
+        async function fetchKubectlData() {
+            try {
+                const response = await fetch('/kubectl-get-ao');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const result = await response.text();
+                const kubectlOutput = document.getElementById('kubectlOutput');
+                kubectlOutput.innerHTML = ''; // Clear existing content
+
+                const lines = result.trim().split('\n');
+                const headers = lines[0].split(/\s+/);
+                const data = lines.slice(1).map(line => {
+                    const values = line.split(/\s+/);
+                    return headers.reduce((obj, header, index) => {
+                        obj[header] = values[index];
+                        return obj;
+                    }, {});
+                });
+
+                // Create table
+                const table = document.createElement('table');
+                table.className = 'min-w-full bg-gray-700 rounded';
+
+                // Create table header
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                headers.forEach(header => {
+                    const th = document.createElement('th');
+                    th.className = 'px-4 py-2';
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+
+                // Create table body
+                const tbody = document.createElement('tbody');
+                data.forEach(rowData => {
+                    const row = document.createElement('tr');
+                    headers.forEach(header => {
+                        const td = document.createElement('td');
+                        td.className = 'border px-4 py-2';
+                        td.textContent = rowData[header] || '';
+                        row.appendChild(td);
+                    });
+                    tbody.appendChild(row);
+                });
+                table.appendChild(tbody);
+
+                // Append table to the output div
+                kubectlOutput.appendChild(table);
+            } catch (error) {
+                console.error('Error fetching kubectl data:', error);
+                document.getElementById('kubectlOutput').textContent = 'Failed to load data. Please try again.';
+            }
+        }
+
+
+        document.getElementById('deleteAllButton').addEventListener('click', async () => {
+            const response = await fetch('/kubectl-get-ao');
+            const result = await response.text();
+
+            // Parse the result to extract namespaces and names
+            const lines = result.split('\n').slice(1); // Skip the header line
+
+            for (const line of lines) {
+                const columns = line.split(/\s+/);
+                if (columns.length > 1) {
+                    const namespace = columns[0];
+                    const name = columns[1];
+
+                    await fetch('/delete-ao', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: new URLSearchParams({
+                            namespace,
+                            name
+                        })
+                    });
+                }
+            }
+
+            alert('All agents have been deleted.');
+        });
+
+        document.getElementById('llmFormButton').addEventListener('click', () => {
+            window.location.href = '/llm-form';
+        });
+
+        async function fetchDeployments() {
+            try {
+                const response = await fetch('/get-deployments');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                let deploymentsText = await response.text();
+
+                // Clean up the stdout to remove extra quotes
+                deploymentsText = deploymentsText.trim().replace(/^'|'$/g, ''); // Remove leading and trailing single quotes
+
+                const deploymentsOutput = document.getElementById('deploymentsOutput');
+
+                const lines = deploymentsText.split('\n');
+                const headers = lines[0].split(/\s+/).map(header => header.trim().toUpperCase()); // Normalize headers
+                const deployments = lines.slice(1).map(line => {
+                    const values = line.split(/\s+/);
+                    return headers.reduce((obj, header, index) => {
+                        obj[header] = values[index];
+                        return obj;
+                    }, {});
+                });
+
+                // Fetch additional deployments data
+                const dataResponse = await fetch('/get-deployments-data');
+                const additionalData = await dataResponse.json();
+
+                // Create table if it doesn't exist
+                let table = deploymentsOutput.querySelector('table');
+                if (!table) {
+                    table = document.createElement('table');
+                    table.className = 'min-w-full bg-gray-700 rounded';
+
+                    // Create table header
+                    const thead = document.createElement('thead');
+                    const headerRow = document.createElement('tr');
+                    const columns = ['NAME', 'NAMESPACE', 'READY', 'UP-TO-DATE', 'AVAILABLE', 'AGE', 'INITIAL CPU', 'APPLIED CPU', 'INITIAL MEMORY', 'APPLIED MEMORY', 'INITIAL LATENCY', 'ACTUAL LATENCY', 'ACTION'];
+                    columns.forEach(column => {
+                        const th = document.createElement('th');
+                        th.className = 'px-4 py-2';
+                        th.textContent = column;
+                        headerRow.appendChild(th);
+                    });
+                    thead.appendChild(headerRow);
+                    table.appendChild(thead);
+
+                    // Create table body
+                    const tbody = document.createElement('tbody');
+                    table.appendChild(tbody);
+                    deploymentsOutput.appendChild(table);
+                }
+
+                const tbody = table.querySelector('tbody');
+                tbody.innerHTML = ''; // Clear existing rows
+
+                // Create table rows
+                const columns = ['NAME', 'NAMESPACE', 'READY', 'UP-TO-DATE', 'AVAILABLE', 'AGE', 'INITIAL CPU', 'APPLIED CPU', 'INITIAL MEMORY', 'APPLIED MEMORY', 'INITIAL LATENCY', 'ACTUAL LATENCY', 'ACTION'];
+                deployments.forEach(deployment => {
+                    const row = document.createElement('tr');
+                    columns.forEach(column => {
+                        const td = document.createElement('td');
+                        td.className = 'border px-4 py-2';
+                        if (column === 'INITIAL CPU') {
+                            td.textContent = additionalData[deployment.NAME]?.initial_cpu_usage || '';
+                        } else if (column === 'APPLIED CPU') {
+                            td.textContent = additionalData[deployment.NAME]?.applied_cpu_usage || '';
+                        } else if (column === 'INITIAL MEMORY') {
+                            td.textContent = additionalData[deployment.NAME]?.initial_memory_usage || '';
+                        } else if (column === 'APPLIED MEMORY') {
+                            td.textContent = additionalData[deployment.NAME]?.applied_memory_usage || '';
+                        } else if (column === 'INITIAL LATENCY') {
+                            td.textContent = additionalData[deployment.NAME]?.initial_avg_latency || '';
+                        } else if (column === 'ACTUAL LATENCY') {
+                            td.textContent = additionalData[deployment.NAME]?.latest_avg_latency || '';
+                        } else if (column === 'ACTION') {
+                            td.textContent = additionalData[deployment.NAME]?.action !== undefined ? additionalData[deployment.NAME].action : '';
+                        } else if (column === 'AGE') {
+                            const ageDate = new Date(deployment[column]);
+                            const now = new Date();
+                            const diffMs = now - ageDate;
+                            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                            const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                            const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                            let ageText = '';
+                            if (diffDays > 0) {
+                                ageText += `${diffDays}d `;
+                            }
+                            if (diffHours > 0) {
+                                ageText += `${diffHours}h `;
+                            }
+                            ageText += `${diffMinutes}m`;
+                            td.textContent = ageText.trim();
+                        } else {
+                            td.textContent = deployment[column] || '';
+                        }
+                        row.appendChild(td);
+                    });
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching deployments:', error);
+                document.getElementById('deploymentsOutput').textContent = 'Failed to load deployments. Please try again.';
+            }
+        }
+        async function fetchPods() {
+            try {
+                const response = await fetch('/get-pods');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const podsText = await response.text();
+                const podsOutput = document.getElementById('podsOutput');
+                podsOutput.innerHTML = ''; // Clear existing content
+
+                const lines = podsText.trim().split('\n');
+                const headers = lines[0].split(/\s+/);
+  
+
+                // Find the correct index for the first occurrence of the NODE column
+                const nodeIndex = headers.indexOf('NODE');
+                const pods = lines.slice(1).map(line => {
+                    const values = line.split(/\s+/);
+                    return headers.reduce((obj, header, index) => {
+                        obj[header] = values[index];
+                        return obj;
+                    }, {});
+                });         
+                // Create table
+                const table = document.createElement('table');
+                table.className = 'min-w-full bg-gray-700 rounded';
+
+                // Create table header
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                const columns = ['NAME', 'READY', 'STATUS', 'RESTARTS', 'AGE', 'NODE'];
+                columns.forEach(column => {
+                    const th = document.createElement('th');
+                    th.className = 'px-4 py-2';
+                    th.textContent = column;
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+
+                // Create table body
+                const tbody = document.createElement('tbody');
+                pods.forEach(pod => {
+                    const row = document.createElement('tr');
+                    columns.forEach(column => {
+                        const td = document.createElement('td');
+                        td.className = 'border px-4 py-2';
+                        if (column === 'AGE') {
+                            const ageDate = new Date(pod[column]);
+                            const now = new Date();
+                            const diffMs = now - ageDate;
+                            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                            const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                            const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                            let ageText = '';
+                            if (diffDays > 0) {
+                                ageText += `${diffDays}d `;
+                            }
+                            if (diffHours > 0) {
+                                ageText += `${diffHours}h `;
+                            }
+                            ageText += `${diffMinutes}m`;
+                            td.textContent = ageText.trim();
+                        } else {
+                            td.textContent = pod[column] || '';
+                        }
+                        row.appendChild(td);
+                    });
+                    tbody.appendChild(row);
+                });
+                table.appendChild(tbody);
+
+                // Append table to the output div
+                podsOutput.appendChild(table);
+            } catch (error) {
+                console.error('Error fetching pods:', error);
+                document.getElementById('podsOutput').textContent = 'Failed to load pods. Please try again.';
+            }
+        }
+
+        // Fetch deployments and pods when the page loads and update every 1 second
+        window.onload = () => {
+            fetchDeployments();
+            fetchPods();
+            setInterval(fetchDeployments, 1000);
+            setInterval(fetchPods, 1000);
+        };
+
+        setInterval(fetchKubectlData, 1000);
+    </script>
+</body>
+</html>

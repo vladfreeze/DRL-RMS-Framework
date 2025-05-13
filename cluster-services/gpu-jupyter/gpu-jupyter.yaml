@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-jupyter
+  namespace: gpu-jupyter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gpu-jupyter
+  template:
+    metadata:
+      labels:
+        app: gpu-jupyter
+    spec:
+      serviceAccountName: gpu-jupyter-sa
+      nodeSelector:
+        is-management-node: "true"
+      containers:
+      - name: gpu-jupyter
+        image: $(IMAGE_REPOSITORY_ENDPOINT)/jupyterlab:gpu
+        imagePullPolicy: Always
+        resources:
+            limits:
+              nvidia.com/gpu: '1'
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: all
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: all
+        ports:
+        - containerPort: 8000
+          name: metrics
+        volumeMounts:
+        - name: gpu-jupyter-pvc
+          mountPath: /tf
+      volumes:
+      - name: gpu-jupyter-pvc
+        persistentVolumeClaim:
+          claimName: gpu-jupyter-pvc  
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: gpu-jupyter
+  namespace: gpu-jupyter
+spec:
+  type: LoadBalancer
+  loadBalancerIP: ${LOAD_BALANCER_IP}
+  selector:
+    app: gpu-jupyter
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8888

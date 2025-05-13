@@ -1,0 +1,19 @@
+[project]
+name = "drl-res-management"
+version = "0.1.0"
+description = "The source code for the framework developed for the thesis 'Resource Conflict Handling in
+Computing Continuum using
+Deep Reinforcement Learning' "
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "black>=25.1.0",
+    "colorlog>=6.9.0",
+    "fastapi>=0.115.12",
+    "isort>=6.0.1",
+    "kubernetes>=32.0.1",
+    "pandas>=2.2.3",
+    "prometheus-api-client>=0.6.0",
+    "pydantic>=2.11.4",
+    "pytest>=8.3.5",
+]

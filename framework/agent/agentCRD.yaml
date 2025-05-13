@@ -1,0 +1,100 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: agents.resourcemanagement-v.io
+spec:
+  group: resourcemanagement-v.io
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - applied
+                    - pending
+                    - conflicting
+                    - disabled
+                namespace:
+                  type: string
+                deploymentName:
+                  type: string
+                resources:
+                  type: object
+                  properties:
+                    resourceQuota:
+                      type: object
+                      properties:
+                        cpu:
+                          type: number
+                          format: float
+                          minimum: 0
+                          maximum: 10
+                          default: 1
+                        memory:
+                          type: number
+                          format: float
+                          minimum: 0
+                          maximum: 10
+                          default: 1
+                scope:
+                  type: string
+                  enum:
+                    - deployment
+                    - namespace
+                    - node
+                nodeName:
+                  type: string
+                restarts:
+                  type: integer
+              required:
+                - scope
+                - namespace
+              oneOf:
+                - properties:
+                    scope:
+                      enum:
+                        - deployment
+                  required:
+                    - deploymentName
+                - properties:
+                    scope:
+                      enum:
+                        - namespace
+                - properties:
+                    scope:
+                      enum:
+                        - node
+      additionalPrinterColumns:
+        - name: Status
+          type: string
+          jsonPath: .spec.status
+        - name: Scope
+          type: string
+          jsonPath: .spec.scope
+        - name: CPU_Quota
+          type: number
+          jsonPath: .spec.resources.resourceQuota.cpu
+        - name: Memory_Quota
+          type: number
+          jsonPath: .spec.resources.resourceQuota.memory
+        - name: Restarts
+          type: integer
+          jsonPath: .spec.restarts
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+  scope: Namespaced
+  names:
+    plural: agents
+    singular: agent
+    kind: Agent
+    shortNames:
+    - ao

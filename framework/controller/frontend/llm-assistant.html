@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM-Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="input.css" rel="stylesheet"> <!-- Add this line to include your custom styles -->
+</head>
+<body class="text-white bg-gradient-to-left">
+    <nav class="bg-cyan-600 p-4">
+        <ul class="flex space-x-4">
+            <li><a href="index.html" class="text-white hover:underline">Controller</a></li>
+            <li><a href="monitoring.html" class="text-white hover:underline">Monitoring</a></li>
+            <li><a href="llm-assistant.html" class="text-white hover:underline">LLM-Assistant</a></li>
+        </ul>
+    </nav>
+    <div id="content" class="p-6">
+        <h1 class="text-2xl font-bold">LLM-Assistant</h1>
+        <p class="mt-2">Make sure to clearly specify the contents of the agent that you want to create and include the required parameters depending on the scope.</p>
+        <p class="mt-2">Example: "Create a new agent with the scope "node" for node "worker-1" and set the cpu quota to 0.8"</p>
+        <div id="deployments-data" class="mt-4"></div>
+
+        <!-- Add the form for LLM input -->
+        <form id="llm-form" class="mt-6">
+            <label for="prompt" class="block text-lg font-medium">Enter your prompt:</label>
+            <textarea id="prompt" name="prompt" rows="4" class="w-full p-2 mt-2 text-black border rounded" placeholder="Type your prompt here..."></textarea>
+            <button type="submit" class="mt-4 px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700">Submit</button>
+        </form>
+
+        <!-- Error message container -->
+        <div id="error-message" class="mt-4 text-red-500"></div>
+    </div>
+
+    <script>
+        document.getElementById('llm-form').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const prompt = document.getElementById('prompt').value;
+            const errorMessageDiv = document.getElementById('error-message');
+
+            try {
+                const response = await fetch('/llm', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    errorMessageDiv.textContent = `Error: ${errorData.detail}`;
+                } else {
+                    const data = await response.json();
+                    errorMessageDiv.textContent = ''; // Clear any previous error messages
+                    alert(data.message); // Show success message
+                }
+            } catch (error) {
+                errorMessageDiv.textContent = `Unexpected error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+MA-Overleaf
+myenv
+__pycache__
+.pytest_cache
+tf
+node_modules
+.ipynb
+.Trash
+rl*
+.ipynb_checkpoints
+.Trash-0

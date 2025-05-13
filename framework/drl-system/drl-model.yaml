@@ -1,0 +1,50 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drl-model
+  namespace: resource-management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drl-model
+  template:
+    metadata:
+      labels:
+        app: drl-model
+    spec:
+      nodeSelector:
+        is-management-node: "true"
+      containers:
+      - name: drl-model
+        image: $(IMAGE_REPOSITORY_ENDPOINT)/model:v9-1
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: "1"
+            memory: "256Mi"
+          limits:
+            cpu: "1"
+            memory: "1512Mi"
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        ports:
+        - containerPort: 8000
+          name: metrics
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: drl-model
+  namespace: resource-management
+spec:
+  selector:
+    app: drl-model
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

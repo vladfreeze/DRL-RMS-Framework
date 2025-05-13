@@ -1,0 +1,13 @@
+apiVersion: resourcemanagement-v.io/v1
+kind: Agent
+metadata:
+  name: test-agent-crd
+spec:
+  status: pending
+  namespace: default
+  nodeName: worker1
+  scope: node
+  resources:
+    resourceQuota:
+      cpu: 0.8
+      memory: 0.8
